@@ -1,0 +1,103 @@
+.diagram-editor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+  width: 100%;  
+  font-family: 'Arial', sans-serif;  
+}
+
+
+.toolbar {
+  margin-top: 20px;  
+  display: flex;
+  gap: 10px;  
+}
+
+
+button {
+  padding: 10px 15px;
+  font-size: 16px;  
+  background-color: #4CAF50;  
+  color: white;
+  border: none;
+  border-radius: 5px; 
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.3s; 
+  outline: none;
+}
+
+
+button:hover {
+  background-color: #45a049;  
+  transform: scale(1.05);  
+}
+
+button:focus, button:active {
+  box-shadow: 0 0 0 3px rgba(0, 255, 0, 0.5);  
+}
+
+
+.graph-container {
+  width: 95%;
+  height: 500px; 
+  border: 2px solid #4CAF50;  
+  background-color: #f9f9f9;
+  margin: 20px auto;  
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+input[type="file"] {
+  border: 1px solid #ccc;
+  display: inline-block;
+  padding: 6px 12px;
+  cursor: pointer;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+  margin: 10px;
+}
+
+
+input[type="color"] {
+  height: 30px;
+  border: none;
+  cursor: pointer;
+  background-color: #f0f0f0;
+  margin: 10px;
+  border-radius: 4px;
+}
+
+
+select {
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  cursor: pointer;
+  margin: 10px;
+}
+
+
+input[type="file"]:hover,
+input[type="color"]:hover,
+select:hover {
+  background-color: #e1e1e1;
+}
+
+
+input[type="file"]:focus,
+input[type="color"]:focus,
+select:focus {
+  outline: none;
+  border-color: #0056b3;
+  box-shadow: 0 0 5px rgba(0, 86, 179, 0.5);
+}
+
+.client-id-display {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: bold;
+}
