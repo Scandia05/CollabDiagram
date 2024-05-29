@@ -9,7 +9,7 @@ app.use(cors());
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "*", // Permitir accesos desde cualquier origen
+    origin: "*",
     methods: ["GET", "POST"]
   }
 });
