@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import './DiagramModifier.css';
 import { useNavigate } from 'react-router-dom';
 import socket from './socket';
+import axios from 'axios';
 
 const mx = require('mxgraph')({
     mxBasePath: 'node_modules/mxgraph/javascript/src'
@@ -9,7 +10,7 @@ const mx = require('mxgraph')({
 
 const { mxGraph, mxRubberband, mxClient, mxUtils, mxCodec, mxConstants, mxEvent, mxGeometry, mxCell } = mx;
 
-const DiagramModifier = () => {
+const DiagramModifier = ({ token }) => {
     const navigate = useNavigate();
     const graphContainer = useRef(null);
     const graph = useRef(null);
@@ -17,9 +18,9 @@ const DiagramModifier = () => {
     const [nodeColor, setNodeColor] = useState('#000000');
     const [nodeShape, setNodeShape] = useState(mxConstants.SHAPE_RECTANGLE);
     const [edgeStyle, setEdgeStyle] = useState('straight');
-    const loading = useRef(false); 
-    const [clientId, setClientId] = useState(null); 
-    const cursors = useRef({}); 
+    const loading = useRef(false);
+    const [clientId, setClientId] = useState(null);
+    const cursors = useRef({});
 
     useEffect(() => {
         if (!mxClient.isBrowserSupported()) {
@@ -105,7 +106,7 @@ const DiagramModifier = () => {
         vertexStyle[mxConstants.STYLE_FILLCOLOR] = nodeColor;
         vertexStyle[mxConstants.STYLE_CONNECTABLE] = 1;
 
-        edgeStyleObject[mxConstants.STYLE_STROKEWIDTH] = 1; // Ajusta el ancho de las conexiones
+        edgeStyleObject[mxConstants.STYLE_STROKEWIDTH] = 1;
         edgeStyleObject[mxConstants.STYLE_DASHED] = (edgeStyle === 'dotted');
         edgeStyleObject[mxConstants.STYLE_ENDARROW] = (edgeStyle === 'none' ? mxConstants.NONE : mxConstants.ARROW_BLOCK);
 
@@ -115,7 +116,7 @@ const DiagramModifier = () => {
     const loadGraphFromXml = (xml) => {
         if (!graph.current) return;
 
-        loading.current = true; 
+        loading.current = true;
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xml, "text/xml");
         const diagramModel = convertXmlToModel(xmlDoc);
@@ -129,7 +130,7 @@ const DiagramModifier = () => {
             graph.current.getModel().endUpdate();
             graph.current.refresh();
             graph.current.fit();
-            loading.current = false; 
+            loading.current = false;
         }
     };
 
@@ -139,7 +140,7 @@ const DiagramModifier = () => {
 
         for (let i = 0; i < root.childNodes.length; i++) {
             const node = root.childNodes[i];
-            if (node.nodeType === 1) { 
+            if (node.nodeType === 1) {
                 const cell = new mxCell();
                 cell.id = node.getAttribute('id');
                 cell.value = node.getAttribute('value');
@@ -154,8 +155,8 @@ const DiagramModifier = () => {
                     const geo = new mxGeometry();
                     geo.x = parseFloat(geoNode.getAttribute('x')) || 0;
                     geo.y = parseFloat(geoNode.getAttribute('y')) || 0;
-                    geo.width = parseFloat(geoNode.getAttribute('width')) || 40; 
-                    geo.height = parseFloat(geoNode.getAttribute('height')) || 15; 
+                    geo.width = parseFloat(geoNode.getAttribute('width')) || 40;
+                    geo.height = parseFloat(geoNode.getAttribute('height')) || 15;
                     geo.relative = geoNode.getAttribute('relative') === '1';
                     cell.geometry = geo;
                 }
@@ -272,7 +273,7 @@ const DiagramModifier = () => {
         }
     };
 
-    const saveDiagram = () => {
+    const saveDiagram = async () => {
         const encoder = new mxCodec();
         const node = encoder.encode(graph.current.getModel());
         const xml = mxUtils.getXml(node);
@@ -283,6 +284,14 @@ const DiagramModifier = () => {
         link.download = 'diagram.xml';
         link.click();
         URL.revokeObjectURL(url);
+
+        try {
+            await axios.post('http://200.13.4.230:4000/api/diagram', { diagram: xml }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+        } catch (error) {
+            console.error('Error saving diagram');
+        }
     };
 
     const zoomIn = () => {

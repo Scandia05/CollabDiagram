@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import './DiagramEditor.css';
 import { useNavigate } from 'react-router-dom';
 import socket from './socket';
+import axios from 'axios';
 
 const mx = require('mxgraph')({
     mxBasePath: 'node_modules/mxgraph/javascript/src'
@@ -9,16 +10,16 @@ const mx = require('mxgraph')({
 
 const { mxGraph, mxRubberband, mxClient, mxUtils, mxConstants, mxCodec, mxEvent, mxGeometry, mxCell } = mx;
 
-const DiagramEditor = () => {
+const DiagramEditor = ({ token }) => {
     const navigate = useNavigate();
     const graphContainer = useRef(null);
     const graph = useRef(null);
     const [nodeColor, setNodeColor] = useState('#000000');
     const [nodeShape, setNodeShape] = useState(mxConstants.SHAPE_RECTANGLE);
     const [edgeStyle, setEdgeStyle] = useState('straight');
-    const loading = useRef(false); 
-    const [clientId, setClientId] = useState(null); 
-    const cursors = useRef({}); 
+    const loading = useRef(false);
+    const [clientId, setClientId] = useState(null);
+    const cursors = useRef({});
 
     useEffect(() => {
         if (!mxClient.isBrowserSupported()) {
@@ -88,7 +89,7 @@ const DiagramEditor = () => {
             socket.off('cursor-update');
             socket.off('load-diagram');
         };
-    }, [clientId]); 
+    }, [clientId]);
 
     useEffect(() => {
         updateStyles();
@@ -113,7 +114,7 @@ const DiagramEditor = () => {
     const loadGraphFromXml = (xml) => {
         if (!graph.current) return;
 
-        loading.current = true; 
+        loading.current = true;
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xml, "text/xml");
         const diagramModel = convertXmlToModel(xmlDoc);
@@ -127,7 +128,7 @@ const DiagramEditor = () => {
             graph.current.getModel().endUpdate();
             graph.current.refresh();
             graph.current.fit();
-            loading.current = false; 
+            loading.current = false;
         }
     };
 
@@ -137,7 +138,7 @@ const DiagramEditor = () => {
 
         for (let i = 0; i < root.childNodes.length; i++) {
             const node = root.childNodes[i];
-            if (node.nodeType === 1) { 
+            if (node.nodeType === 1) {
                 const cell = new mxCell();
                 cell.id = node.getAttribute('id');
                 cell.value = node.getAttribute('value');
@@ -243,7 +244,7 @@ const DiagramEditor = () => {
         }
     };
 
-    const saveDiagram = () => {
+    const saveDiagram = async () => {
         const encoder = new mxCodec();
         const node = encoder.encode(graph.current.getModel());
         const xml = mxUtils.getXml(node);
@@ -254,6 +255,14 @@ const DiagramEditor = () => {
         link.download = 'diagram.xml';
         link.click();
         URL.revokeObjectURL(url);
+
+        try {
+            await axios.post('http://200.13.4.230:4000/api/diagram', { diagram: xml }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+        } catch (error) {
+            console.error('Error saving diagram');
+        }
     };
 
     const zoomIn = () => {

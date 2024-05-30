@@ -1,22 +1,28 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import MainMenu from './Components/Main';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Register from './Components/Register';
+import Login from './Components/Login';
 import DiagramEditor from './Components/DiagramEditor';
 import DiagramModifier from './Components/DiagramModifier';
-import socket from './Components/socket'; // Importa el socket
+import Main from './Components/Main';
+import { AuthProvider } from './Components/AuthContext';
+import socket from './Components/socket';
 
-function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<MainMenu />} />
-        <Route path="/create" element={<DiagramEditor socket={socket} />} /> {}
-        <Route path="/modify" element={<DiagramModifier socket={socket} />} /> {}
-      </Routes>
-    </Router>
-  );
-}
+const App = () => {
+    return (
+        <AuthProvider>
+            <Router>
+                <Routes>
+                    <Route path="/" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/menu" element={<Main />} /> {/* Nueva ruta para el menú */}
+                    <Route path="/create" element={<DiagramEditor socket={socket} />} /> {}
+                    <Route path="/modify" element={<DiagramModifier socket={socket} />} /> {}
+                </Routes>
+            </Router>
+        </AuthProvider>
+    );
+};
 
 export default App;
-
-

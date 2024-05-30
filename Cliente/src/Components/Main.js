@@ -1,15 +1,25 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from './AuthContext';
 
 const Main = () => {
     const navigate = useNavigate();
+    const { token } = useContext(AuthContext);
 
     const handleCreateNew = () => {
-        navigate('/create');
+        if (token) {
+            navigate('/create');
+        } else {
+            navigate('/login');
+        }
     };
 
     const handleModify = () => {
-        navigate('/modify');
+        if (token) {
+            navigate('/modify');
+        } else {
+            navigate('/login');
+        }
     };
 
     return (
@@ -21,3 +31,4 @@ const Main = () => {
 };
 
 export default Main;
+
