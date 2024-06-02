@@ -74,7 +74,7 @@ app.post('/login', async (req, res) => {
     return res.status(401).send('Invalid credentials');
   }
 
-  const token = jwt.sign({ id: user._id }, 'your_jwt_secret', { expiresIn: '1h' });
+  const token = jwt.sign({ id: user._id, username: user.username }, 'your_jwt_secret', { expiresIn: '1h' });
   res.status(200).json({ token });
 });
 
@@ -97,8 +97,8 @@ io.on('connection', (socket) => {
   });
 
   // Manejar la actualización del cursor
-  socket.on('cursor-update', ({ id, x, y }) => {
-    socket.broadcast.emit('cursor-update', { id, x, y });
+  socket.on('cursor-update', ({ id, x, y, username }) => {
+    socket.broadcast.emit('cursor-update', { id, x, y, username });
   });
 
   // Manejar la desconexión del cliente

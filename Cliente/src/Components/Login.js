@@ -9,13 +9,13 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
-    const { saveToken } = useContext(AuthContext);
+    const { saveAuthData } = useContext(AuthContext);
 
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
             const response = await axios.post('http://200.13.4.230:4000/login', { username, password });
-            saveToken(response.data.token);
+            saveAuthData(response.data.token, username);
             navigate('/menu'); // Redirigir a la página del menú
         } catch (error) {
             setMessage('Invalid credentials');

@@ -1,17 +1,18 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useContext } from 'react';
 import './DiagramModifier.css';
 import { useNavigate } from 'react-router-dom';
 import socket from './socket';
-import axios from 'axios';
+import { AuthContext } from './AuthContext';
 
 const mx = require('mxgraph')({
     mxBasePath: 'node_modules/mxgraph/javascript/src'
 });
 
-const { mxGraph, mxRubberband, mxClient, mxUtils, mxCodec, mxConstants, mxEvent, mxGeometry, mxCell } = mx;
+const { mxGraph, mxRubberband, mxClient, mxUtils, mxConstants, mxCodec, mxEvent, mxGeometry, mxCell } = mx;
 
-const DiagramModifier = ({ token }) => {
+const DiagramModifier = () => {
     const navigate = useNavigate();
+    const { username } = useContext(AuthContext);
     const graphContainer = useRef(null);
     const graph = useRef(null);
     const fileInputRef = useRef(null);
@@ -51,8 +52,8 @@ const DiagramModifier = ({ token }) => {
             }
         });
 
-        socket.on('cursor-update', ({ id, x, y }) => {
-            updateCursor(id, x, y);
+        socket.on('cursor-update', ({ id, x, y, username }) => {
+            updateCursor(id, x, y, username);
         });
 
         socket.on('load-diagram', (xml) => {
@@ -77,7 +78,7 @@ const DiagramModifier = ({ token }) => {
                     : null;
 
                 if (pt) {
-                    socket.emit('cursor-update', { id: clientId, x: pt.x, y: pt.y });
+                    socket.emit('cursor-update', { id: clientId, x: pt.x, y: pt.y, username });
                 }
             },
             mouseDown: () => {},
@@ -90,7 +91,7 @@ const DiagramModifier = ({ token }) => {
             socket.off('cursor-update');
             socket.off('load-diagram');
         };
-    }, [clientId]);
+    }, [clientId, username]);
 
     useEffect(() => {
         updateStyles();
@@ -106,7 +107,7 @@ const DiagramModifier = ({ token }) => {
         vertexStyle[mxConstants.STYLE_FILLCOLOR] = nodeColor;
         vertexStyle[mxConstants.STYLE_CONNECTABLE] = 1;
 
-        edgeStyleObject[mxConstants.STYLE_STROKEWIDTH] = 1;
+        edgeStyleObject[mxConstants.STYLE_STROKEWIDTH] = 1; // Ajusta el ancho de las conexiones
         edgeStyleObject[mxConstants.STYLE_DASHED] = (edgeStyle === 'dotted');
         edgeStyleObject[mxConstants.STYLE_ENDARROW] = (edgeStyle === 'none' ? mxConstants.NONE : mxConstants.ARROW_BLOCK);
 
@@ -182,14 +183,14 @@ const DiagramModifier = ({ token }) => {
         });
     };
 
-    const updateCursor = (id, x, y) => {
+    const updateCursor = (id, x, y, username) => {
         if (!graphContainer.current) return;
 
         let cursorElement = cursors.current[id];
         if (!cursorElement) {
             cursorElement = document.createElement('div');
             cursorElement.className = 'cursor';
-            cursorElement.innerText = `Cliente ${id}`;
+            cursorElement.innerText = username;
             cursorElement.style.position = 'absolute';
             cursorElement.style.pointerEvents = 'none';
             cursorElement.style.background = 'rgba(255, 255, 255, 0.7)';
@@ -273,7 +274,7 @@ const DiagramModifier = ({ token }) => {
         }
     };
 
-    const saveDiagram = async () => {
+    const saveDiagram = () => {
         const encoder = new mxCodec();
         const node = encoder.encode(graph.current.getModel());
         const xml = mxUtils.getXml(node);
@@ -284,14 +285,6 @@ const DiagramModifier = ({ token }) => {
         link.download = 'diagram.xml';
         link.click();
         URL.revokeObjectURL(url);
-
-        try {
-            await axios.post('http://200.13.4.230:4000/api/diagram', { diagram: xml }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-        } catch (error) {
-            console.error('Error saving diagram');
-        }
     };
 
     const zoomIn = () => {

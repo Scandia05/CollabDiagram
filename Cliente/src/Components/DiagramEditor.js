@@ -1,8 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useContext } from 'react';
 import './DiagramEditor.css';
 import { useNavigate } from 'react-router-dom';
 import socket from './socket';
-import axios from 'axios';
+import { AuthContext } from './AuthContext';
 
 const mx = require('mxgraph')({
     mxBasePath: 'node_modules/mxgraph/javascript/src'
@@ -10,8 +10,9 @@ const mx = require('mxgraph')({
 
 const { mxGraph, mxRubberband, mxClient, mxUtils, mxConstants, mxCodec, mxEvent, mxGeometry, mxCell } = mx;
 
-const DiagramEditor = ({ token }) => {
+const DiagramEditor = () => {
     const navigate = useNavigate();
+    const { username } = useContext(AuthContext);
     const graphContainer = useRef(null);
     const graph = useRef(null);
     const [nodeColor, setNodeColor] = useState('#000000');
@@ -50,8 +51,8 @@ const DiagramEditor = ({ token }) => {
             }
         });
 
-        socket.on('cursor-update', ({ id, x, y }) => {
-            updateCursor(id, x, y);
+        socket.on('cursor-update', ({ id, x, y, username }) => {
+            updateCursor(id, x, y, username);
         });
 
         socket.on('load-diagram', (xml) => {
@@ -76,7 +77,7 @@ const DiagramEditor = ({ token }) => {
                     : null;
 
                 if (pt) {
-                    socket.emit('cursor-update', { id: clientId, x: pt.x, y: pt.y });
+                    socket.emit('cursor-update', { id: clientId, x: pt.x, y: pt.y, username });
                 }
             },
             mouseDown: () => {},
@@ -89,7 +90,7 @@ const DiagramEditor = ({ token }) => {
             socket.off('cursor-update');
             socket.off('load-diagram');
         };
-    }, [clientId]);
+    }, [clientId, username]);
 
     useEffect(() => {
         updateStyles();
@@ -180,14 +181,14 @@ const DiagramEditor = ({ token }) => {
         });
     };
 
-    const updateCursor = (id, x, y) => {
+    const updateCursor = (id, x, y, username) => {
         if (!graphContainer.current) return;
 
         let cursorElement = cursors.current[id];
         if (!cursorElement) {
             cursorElement = document.createElement('div');
             cursorElement.className = 'cursor';
-            cursorElement.innerText = `Cliente ${id}`;
+            cursorElement.innerText = username;
             cursorElement.style.position = 'absolute';
             cursorElement.style.pointerEvents = 'none';
             cursorElement.style.background = 'rgba(255, 255, 255, 0.7)';
@@ -244,7 +245,7 @@ const DiagramEditor = ({ token }) => {
         }
     };
 
-    const saveDiagram = async () => {
+    const saveDiagram = () => {
         const encoder = new mxCodec();
         const node = encoder.encode(graph.current.getModel());
         const xml = mxUtils.getXml(node);
@@ -255,14 +256,6 @@ const DiagramEditor = ({ token }) => {
         link.download = 'diagram.xml';
         link.click();
         URL.revokeObjectURL(url);
-
-        try {
-            await axios.post('http://200.13.4.230:4000/api/diagram', { diagram: xml }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-        } catch (error) {
-            console.error('Error saving diagram');
-        }
     };
 
     const zoomIn = () => {
