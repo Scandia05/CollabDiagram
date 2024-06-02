@@ -2,16 +2,14 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const bodyParser = require('body-parser');
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-
-const users = []; // Aquí se almacenarán los usuarios registrados
-const secret = 'secret_key'; // Llave secreta para JWT
 
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -21,75 +19,93 @@ const io = socketIo(server, {
   }
 });
 
-// Registro de usuario
-app.post('/register', (req, res) => {
-  const { username, password } = req.body;
-  const hashedPassword = bcrypt.hashSync(password, 8);
-  users.push({ username, password: hashedPassword });
-  res.status(200).send({ message: 'User registered successfully' });
+// Conectar a la base de datos MongoDB
+mongoose.connect('mongodb://localhost:27017/mxgraph', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 });
 
-// Login de usuario
-app.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  const user = users.find(u => u.username === username);
-  if (user && bcrypt.compareSync(password, user.password)) {
-    const token = jwt.sign({ username: user.username }, secret, { expiresIn: '1h' });
-    res.status(200).send({ token });
-  } else {
-    res.status(401).send({ message: 'Invalid credentials' });
-  }
+// Definir el esquema y el modelo de usuario
+const userSchema = new mongoose.Schema({
+  username: String,
+  password: String,
+  name: String,
+  email: String,
 });
 
-// Middleware de autenticación
-const authenticate = (req, res, next) => {
-  const token = req.headers['authorization'];
-  if (!token) {
-    return res.status(403).send({ message: 'No token provided' });
+const User = mongoose.model('User', userSchema);
+
+// Ruta de registro de usuario
+app.post('/register', async (req, res) => {
+  const { username, password, name, email } = req.body;
+
+  if (!username || !password || !name || !email) {
+    return res.status(400).send('All fields are required');
   }
-  jwt.verify(token, secret, (err, decoded) => {
-    if (err) {
-      return res.status(500).send({ message: 'Failed to authenticate token' });
-    }
-    req.username = decoded.username;
-    next();
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const newUser = new User({
+    username,
+    password: hashedPassword,
+    name,
+    email,
   });
-};
 
+  await newUser.save();
+  res.status(201).send('User registered successfully');
+});
+
+// Ruta de inicio de sesión de usuario
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).send('Username and password are required');
+  }
+
+  const user = await User.findOne({ username });
+  if (!user) {
+    return res.status(401).send('Invalid credentials');
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(401).send('Invalid credentials');
+  }
+
+  const token = jwt.sign({ id: user._id }, 'your_jwt_secret', { expiresIn: '1h' });
+  res.status(200).json({ token });
+});
+
+// Inicializar el estado del diagrama
 let currentDiagramXml = "";
 
 io.on('connection', (socket) => {
   console.log('New client connected');
-  
+
+  // Enviar el diagrama actual al cliente que se conecta
   if (currentDiagramXml) {
     socket.emit('load-diagram', currentDiagramXml);
   }
 
+  // Manejar la actualización del diagrama
   socket.on('diagram-update', (xml) => {
     console.log('Diagram updated');
     currentDiagramXml = xml;
     socket.broadcast.emit('diagram-update', xml);
   });
 
+  // Manejar la actualización del cursor
   socket.on('cursor-update', ({ id, x, y }) => {
     socket.broadcast.emit('cursor-update', { id, x, y });
   });
 
+  // Manejar la desconexión del cliente
   socket.on('disconnect', () => {
     console.log('Client disconnected');
   });
 });
 
-app.get('/api/diagram', authenticate, (req, res) => {
-  res.status(200).send({ diagram: currentDiagramXml });
-});
-
-app.post('/api/diagram', authenticate, (req, res) => {
-  currentDiagramXml = req.body.diagram;
-  res.status(200).send({ message: 'Diagram saved successfully' });
-});
-
 const PORT = 4000;
 server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
-
-
