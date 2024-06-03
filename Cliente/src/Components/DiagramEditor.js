@@ -301,7 +301,7 @@ const DiagramEditor = () => {
     };
 
     const goBack = () => {
-        navigate('/menu');
+        navigate('/');
     };
 
     return (
@@ -328,7 +328,7 @@ const DiagramEditor = () => {
                     <option value="none">Continua sin punta</option>
                 </select>
                 <button onClick={openModal}>Compartir Diagrama</button>
-                <div className="client-id-display">Cliente {clientId}</div>
+                <div className="client-id-display">Cliente {clientId} ({username})</div>
             </div>
             <Modal
                 isOpen={modalIsOpen}
