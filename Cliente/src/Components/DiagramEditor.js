@@ -21,6 +21,7 @@ const DiagramEditor = () => {
     const loading = useRef(false);
     const [clientId, setClientId] = useState(null);
     const cursors = useRef({});
+    const [scale, setScale] = useState(1);
 
     useEffect(() => {
         if (!mxClient.isBrowserSupported()) {
@@ -128,7 +129,7 @@ const DiagramEditor = () => {
         } finally {
             graph.current.getModel().endUpdate();
             graph.current.refresh();
-            graph.current.fit();
+            // graph.current.fit(); // Commented out to maintain the current zoom level
             loading.current = false;
         }
     };
@@ -199,8 +200,8 @@ const DiagramEditor = () => {
             cursors.current[id] = cursorElement;
         }
 
-        cursorElement.style.left = `${x}px`;
-        cursorElement.style.top = `${y}px`;
+        cursorElement.style.left = `${x * scale}px`;
+        cursorElement.style.top = `${y * scale}px`;
     };
 
     const addVertex = () => {
@@ -259,10 +260,12 @@ const DiagramEditor = () => {
     };
 
     const zoomIn = () => {
+        setScale(scale * 1.2);
         graph.current.zoomIn();
     };
 
     const zoomOut = () => {
+        setScale(scale / 1.2);
         graph.current.zoomOut();
     };
 
@@ -300,3 +303,4 @@ const DiagramEditor = () => {
 };
 
 export default DiagramEditor;
+
