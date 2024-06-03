@@ -270,7 +270,7 @@ const DiagramEditor = () => {
     };
 
     const goBack = () => {
-        navigate('/');
+        navigate('/menu');
     };
 
     return (

@@ -22,6 +22,7 @@ const DiagramModifier = () => {
     const loading = useRef(false);
     const [clientId, setClientId] = useState(null);
     const cursors = useRef({});
+    const [scale, setScale] = useState(1);
 
     useEffect(() => {
         if (!mxClient.isBrowserSupported()) {
@@ -130,7 +131,7 @@ const DiagramModifier = () => {
         } finally {
             graph.current.getModel().endUpdate();
             graph.current.refresh();
-            graph.current.fit();
+            // graph.current.fit(); // Commented out to maintain the current zoom level
             loading.current = false;
         }
     };
@@ -156,8 +157,8 @@ const DiagramModifier = () => {
                     const geo = new mxGeometry();
                     geo.x = parseFloat(geoNode.getAttribute('x')) || 0;
                     geo.y = parseFloat(geoNode.getAttribute('y')) || 0;
-                    geo.width = parseFloat(geoNode.getAttribute('width')) || 40;
-                    geo.height = parseFloat(geoNode.getAttribute('height')) || 15;
+                    geo.width = parseFloat(geoNode.getAttribute('width')) || 40; 
+                    geo.height = parseFloat(geoNode.getAttribute('height')) || 15; 
                     geo.relative = geoNode.getAttribute('relative') === '1';
                     cell.geometry = geo;
                 }
@@ -201,8 +202,8 @@ const DiagramModifier = () => {
             cursors.current[id] = cursorElement;
         }
 
-        cursorElement.style.left = `${x}px`;
-        cursorElement.style.top = `${y}px`;
+        cursorElement.style.left = `${x * scale}px`;
+        cursorElement.style.top = `${y * scale}px`;
     };
 
     const handleFileSelection = (event) => {
@@ -288,15 +289,17 @@ const DiagramModifier = () => {
     };
 
     const zoomIn = () => {
+        setScale(scale * 1.2);
         graph.current.zoomIn();
     };
 
     const zoomOut = () => {
+        setScale(scale / 1.2);
         graph.current.zoomOut();
     };
 
     const goBack = () => {
-        navigate('/');
+        navigate('/menu');
     };
 
     return (
