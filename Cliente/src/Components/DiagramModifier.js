@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useContext } from 'react';
 import './DiagramModifier.css';
 import { useNavigate } from 'react-router-dom';
 import socket from './socket';
+import axios from 'axios';
 import { AuthContext } from './AuthContext';
 
 const mx = require('mxgraph')({
@@ -12,7 +13,7 @@ const { mxGraph, mxRubberband, mxClient, mxUtils, mxConstants, mxCodec, mxEvent,
 
 const DiagramModifier = () => {
     const navigate = useNavigate();
-    const { username } = useContext(AuthContext);
+    const { token, username } = useContext(AuthContext);
     const graphContainer = useRef(null);
     const graph = useRef(null);
     const fileInputRef = useRef(null);
@@ -23,6 +24,7 @@ const DiagramModifier = () => {
     const [clientId, setClientId] = useState(null);
     const cursors = useRef({});
     const [scale, setScale] = useState(1);
+    const [targetUsernameOrEmail, setTargetUsernameOrEmail] = useState('');
 
     useEffect(() => {
         if (!mxClient.isBrowserSupported()) {
@@ -46,6 +48,13 @@ const DiagramModifier = () => {
             id = parseInt(sessionStorage.getItem('client-id'));
         }
         setClientId(id);
+
+        socket.auth = { token };
+        socket.connect();
+
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
 
         socket.on('diagram-update', (xml) => {
             if (!loading.current) {
@@ -92,7 +101,7 @@ const DiagramModifier = () => {
             socket.off('cursor-update');
             socket.off('load-diagram');
         };
-    }, [clientId, username]);
+    }, [clientId, username, token]);
 
     useEffect(() => {
         updateStyles();
@@ -157,8 +166,8 @@ const DiagramModifier = () => {
                     const geo = new mxGeometry();
                     geo.x = parseFloat(geoNode.getAttribute('x')) || 0;
                     geo.y = parseFloat(geoNode.getAttribute('y')) || 0;
-                    geo.width = parseFloat(geoNode.getAttribute('width')) || 40; 
-                    geo.height = parseFloat(geoNode.getAttribute('height')) || 15; 
+                    geo.width = parseFloat(geoNode.getAttribute('width')) || 40;
+                    geo.height = parseFloat(geoNode.getAttribute('height')) || 15;
                     geo.relative = geoNode.getAttribute('relative') === '1';
                     cell.geometry = geo;
                 }
@@ -288,6 +297,22 @@ const DiagramModifier = () => {
         URL.revokeObjectURL(url);
     };
 
+    const shareDiagram = async () => {
+        const encoder = new mxCodec();
+        const node = encoder.encode(graph.current.getModel());
+        const xml = mxUtils.getXml(node);
+
+        try {
+            const response = await axios.post('http://200.13.4.230:4000/share', 
+                { targetUsernameOrEmail, diagramXml: xml }, 
+                { headers: { Authorization: token } }
+            );
+            console.log(response.data);
+        } catch (error) {
+            console.error('Error sharing diagram:', error);
+        }
+    };
+
     const zoomIn = () => {
         setScale(scale * 1.2);
         graph.current.zoomIn();
@@ -333,6 +358,13 @@ const DiagramModifier = () => {
                     <option value="dotted">Punteada con punta</option>
                     <option value="none">Continua sin punta</option>
                 </select>
+                <input 
+                    type="text" 
+                    placeholder="Enter username or email" 
+                    value={targetUsernameOrEmail}
+                    onChange={(e) => setTargetUsernameOrEmail(e.target.value)}
+                />
+                <button onClick={shareDiagram}>Compartir Diagrama</button>
                 <div className="client-id-display">Cliente {clientId}</div>
             </div>
         </div>

@@ -35,6 +35,8 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
+let activeSessions = {}; // Para rastrear sesiones activas
+
 // Ruta de registro de usuario
 app.post('/register', async (req, res) => {
   const { username, password, name, email } = req.body;
@@ -75,14 +77,67 @@ app.post('/login', async (req, res) => {
   }
 
   const token = jwt.sign({ id: user._id, username: user.username }, 'your_jwt_secret', { expiresIn: '1h' });
+  activeSessions[user._id] = { token, username: user.username };
   res.status(200).json({ token });
+});
+
+// Middleware para validar el token
+const authenticate = (req, res, next) => {
+  const token = req.headers['authorization'];
+  if (!token) return res.status(403).send('Token is required');
+
+  jwt.verify(token, 'your_jwt_secret', (err, user) => {
+    if (err) return res.status(403).send('Invalid token');
+    req.user = user;
+    next();
+  });
+};
+
+// Ruta para compartir el diagrama
+app.post('/share', authenticate, async (req, res) => {
+  const { targetUsernameOrEmail, diagramXml } = req.body;
+  if (!targetUsernameOrEmail || !diagramXml) return res.status(400).send('Target username or email and diagram XML are required');
+
+  const targetUser = await User.findOne({ 
+    $or: [
+      { username: targetUsernameOrEmail }, 
+      { email: targetUsernameOrEmail }
+    ] 
+  });
+
+  if (!targetUser) return res.status(404).send('Target user not found');
+
+  if (!activeSessions[targetUser._id]) {
+    return res.status(404).send('Target user is not active');
+  }
+
+  // Enviar el diagrama al usuario objetivo
+  const targetSocketId = activeSessions[targetUser._id].socketId;
+  if (targetSocketId) {
+    io.to(targetSocketId).emit('load-diagram', diagramXml);
+    res.status(200).send('Diagram shared successfully');
+  } else {
+    res.status(404).send('Target user is not connected');
+  }
 });
 
 // Inicializar el estado del diagrama
 let currentDiagramXml = "";
 
-io.on('connection', (socket) => {
-  console.log('New client connected');
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) return next(new Error('Authentication error'));
+
+  jwt.verify(token, 'your_jwt_secret', (err, user) => {
+    if (err) return next(new Error('Authentication error'));
+    socket.user = user;
+    next();
+  });
+}).on('connection', (socket) => {
+  console.log('New client connected:', socket.user.username);
+
+  // Guardar el socket ID en la sesión activa
+  activeSessions[socket.user.id].socketId = socket.id;
 
   // Enviar el diagrama actual al cliente que se conecta
   if (currentDiagramXml) {
@@ -91,7 +146,7 @@ io.on('connection', (socket) => {
 
   // Manejar la actualización del diagrama
   socket.on('diagram-update', (xml) => {
-    console.log('Diagram updated');
+    console.log('Diagram updated by:', socket.user.username);
     currentDiagramXml = xml;
     socket.broadcast.emit('diagram-update', xml);
   });
@@ -103,7 +158,8 @@ io.on('connection', (socket) => {
 
   // Manejar la desconexión del cliente
   socket.on('disconnect', () => {
-    console.log('Client disconnected');
+    console.log('Client disconnected:', socket.user.username);
+    delete activeSessions[socket.user.id].socketId;
   });
 });
 
