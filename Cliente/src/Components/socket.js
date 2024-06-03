@@ -1,11 +1,10 @@
 import io from 'socket.io-client';
-import { getAuthToken } from './AuthContext';  // Suponiendo que tienes una función para obtener el token almacenado
 
-const token = getAuthToken();
+const token = localStorage.getItem('token');
 
 const socket = io('http://200.13.4.230:4000', {
   auth: {
-    token
+    token: token
   }
 });
 
@@ -26,4 +25,3 @@ socket.on('connect_error', (error) => {
 });
 
 export default socket;
-

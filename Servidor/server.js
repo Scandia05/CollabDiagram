@@ -31,6 +31,10 @@ const userSchema = new mongoose.Schema({
   password: String,
   name: String,
   email: String,
+  sharedDiagrams: [{
+    from: String,
+    diagramXml: String
+  }]
 });
 
 const User = mongoose.model('User', userSchema);
