@@ -7,13 +7,11 @@
   font-family: 'Arial', sans-serif;  
 }
 
-
 .toolbar {
   margin-top: 20px;  
   display: flex;
   gap: 10px;  
 }
-
 
 button {
   padding: 10px 15px;
@@ -27,7 +25,6 @@ button {
   outline: none;
 }
 
-
 button:hover {
   background-color: #45a049;  
   transform: scale(1.05);  
@@ -36,7 +33,6 @@ button:hover {
 button:focus, button:active {
   box-shadow: 0 0 0 3px rgba(0, 255, 0, 0.5);  
 }
-
 
 .graph-container {
   width: 95%;
@@ -60,7 +56,6 @@ input[type="file"] {
   margin: 10px;
 }
 
-
 input[type="color"] {
   height: 30px;
   border: none;
@@ -69,7 +64,6 @@ input[type="color"] {
   margin: 10px;
   border-radius: 4px;
 }
-
 
 select {
   padding: 5px 10px;
@@ -80,13 +74,11 @@ select {
   margin: 10px;
 }
 
-
 input[type="file"]:hover,
 input[type="color"]:hover,
 select:hover {
   background-color: #e1e1e1;
 }
-
 
 input[type="file"]:focus,
 input[type="color"]:focus,
@@ -100,4 +92,41 @@ select:focus {
   margin-top: 10px;
   font-size: 16px;
   font-weight: bold;
+}
+
+.Modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  margin-right: -50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.Overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+input[type="text"] {
+  padding: 8px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: calc(100% - 20px);
+}
+
+input[type="text"]:focus {
+  outline: none;
+  border-color: #0056b3;
+  box-shadow: 0 0 5px rgba(0, 86, 179, 0.5);
 }

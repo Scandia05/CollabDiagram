@@ -1,6 +1,12 @@
 import io from 'socket.io-client';
 
-const socket = io('http://200.13.4.230:4000');
+const token = localStorage.getItem('token');
+
+const socket = io('http://200.13.4.230:4000', {
+  auth: {
+    token: token
+  }
+});
 
 socket.on('connect', () => {
   console.log('Connected to WebSocket server');

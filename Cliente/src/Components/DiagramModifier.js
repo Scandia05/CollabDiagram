@@ -4,12 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import socket from './socket';
 import axios from 'axios';
 import { AuthContext } from './AuthContext';
+import Modal from 'react-modal';
 
 const mx = require('mxgraph')({
     mxBasePath: 'node_modules/mxgraph/javascript/src'
 });
 
 const { mxGraph, mxRubberband, mxClient, mxUtils, mxConstants, mxCodec, mxEvent, mxGeometry, mxCell } = mx;
+
+Modal.setAppElement('#root'); // Agrega esta línea
 
 const DiagramModifier = () => {
     const navigate = useNavigate();
@@ -24,6 +27,7 @@ const DiagramModifier = () => {
     const [clientId, setClientId] = useState(null);
     const cursors = useRef({});
     const [scale, setScale] = useState(1);
+    const [modalIsOpen, setModalIsOpen] = useState(false);
     const [targetUsernameOrEmail, setTargetUsernameOrEmail] = useState('');
 
     useEffect(() => {
@@ -111,15 +115,14 @@ const DiagramModifier = () => {
         if (!graph.current) return;
 
         const vertexStyle = graph.current.getStylesheet().getDefaultVertexStyle();
-        const edgeStyleObject = graph.current.getStylesheet().getDefaultEdgeStyle();
-
         vertexStyle[mxConstants.STYLE_SHAPE] = nodeShape;
         vertexStyle[mxConstants.STYLE_FILLCOLOR] = nodeColor;
         vertexStyle[mxConstants.STYLE_CONNECTABLE] = 1;
 
-        edgeStyleObject[mxConstants.STYLE_STROKEWIDTH] = 1; // Ajusta el ancho de las conexiones
+        const edgeStyleObject = graph.current.getStylesheet().getDefaultEdgeStyle();
+        edgeStyleObject[mxConstants.STYLE_STROKEWIDTH] = 2;
         edgeStyleObject[mxConstants.STYLE_DASHED] = (edgeStyle === 'dotted');
-        edgeStyleObject[mxConstants.STYLE_ENDARROW] = (edgeStyle === 'none' ? mxConstants.NONE : mxConstants.ARROW_BLOCK);
+        edgeStyleObject[mxConstants.STYLE_ENDARROW] = (edgeStyle === 'none') ? mxConstants.NONE : mxConstants.ARROW_BLOCK;
 
         graph.current.refresh();
     };
@@ -140,7 +143,6 @@ const DiagramModifier = () => {
         } finally {
             graph.current.getModel().endUpdate();
             graph.current.refresh();
-            // graph.current.fit(); // Commented out to maintain the current zoom level
             loading.current = false;
         }
     };
@@ -313,6 +315,9 @@ const DiagramModifier = () => {
         }
     };
 
+    const openModal = () => setModalIsOpen(true);
+    const closeModal = () => setModalIsOpen(false);
+
     const zoomIn = () => {
         setScale(scale * 1.2);
         graph.current.zoomIn();
@@ -358,15 +363,26 @@ const DiagramModifier = () => {
                     <option value="dotted">Punteada con punta</option>
                     <option value="none">Continua sin punta</option>
                 </select>
+                <button onClick={openModal}>Compartir Diagrama</button>
+                <div className="client-id-display">Cliente {clientId}</div>
+            </div>
+            <Modal
+                isOpen={modalIsOpen}
+                onRequestClose={closeModal}
+                contentLabel="Compartir Diagrama"
+                className="Modal"
+                overlayClassName="Overlay"
+            >
+                <h2>Compartir Diagrama</h2>
                 <input 
                     type="text" 
                     placeholder="Enter username or email" 
                     value={targetUsernameOrEmail}
                     onChange={(e) => setTargetUsernameOrEmail(e.target.value)}
                 />
-                <button onClick={shareDiagram}>Compartir Diagrama</button>
-                <div className="client-id-display">Cliente {clientId}</div>
-            </div>
+                <button onClick={shareDiagram}>Compartir</button>
+                <button onClick={closeModal}>Cerrar</button>
+            </Modal>
         </div>
     );
 };

@@ -4,12 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import socket from './socket';
 import axios from 'axios';
 import { AuthContext } from './AuthContext';
+import Modal from 'react-modal';
 
 const mx = require('mxgraph')({
     mxBasePath: 'node_modules/mxgraph/javascript/src'
 });
 
 const { mxGraph, mxRubberband, mxClient, mxUtils, mxConstants, mxCodec, mxEvent, mxGeometry, mxCell } = mx;
+
+Modal.setAppElement('#root'); // Definir el elemento principal para el modal
 
 const DiagramEditor = () => {
     const navigate = useNavigate();
@@ -19,10 +22,11 @@ const DiagramEditor = () => {
     const [nodeColor, setNodeColor] = useState('#000000');
     const [nodeShape, setNodeShape] = useState(mxConstants.SHAPE_RECTANGLE);
     const [edgeStyle, setEdgeStyle] = useState('straight');
-    const loading = useRef(false);
-    const [clientId, setClientId] = useState(null);
-    const cursors = useRef({});
+    const loading = useRef(false); 
+    const [clientId, setClientId] = useState(null); 
+    const cursors = useRef({}); 
     const [scale, setScale] = useState(1);
+    const [modalIsOpen, setModalIsOpen] = useState(false);
     const [targetUsernameOrEmail, setTargetUsernameOrEmail] = useState('');
 
     useEffect(() => {
@@ -100,7 +104,7 @@ const DiagramEditor = () => {
             socket.off('cursor-update');
             socket.off('load-diagram');
         };
-    }, [clientId, username, token]);
+    }, [clientId, username, token]); 
 
     useEffect(() => {
         updateStyles();
@@ -125,7 +129,7 @@ const DiagramEditor = () => {
     const loadGraphFromXml = (xml) => {
         if (!graph.current) return;
 
-        loading.current = true;
+        loading.current = true; 
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xml, "text/xml");
         const diagramModel = convertXmlToModel(xmlDoc);
@@ -138,8 +142,7 @@ const DiagramEditor = () => {
         } finally {
             graph.current.getModel().endUpdate();
             graph.current.refresh();
-            // graph.current.fit(); // Commented out to maintain the current zoom level
-            loading.current = false;
+            loading.current = false; 
         }
     };
 
@@ -149,7 +152,7 @@ const DiagramEditor = () => {
 
         for (let i = 0; i < root.childNodes.length; i++) {
             const node = root.childNodes[i];
-            if (node.nodeType === 1) {
+            if (node.nodeType === 1) { 
                 const cell = new mxCell();
                 cell.id = node.getAttribute('id');
                 cell.value = node.getAttribute('value');
@@ -284,6 +287,9 @@ const DiagramEditor = () => {
         }
     };
 
+    const openModal = () => setModalIsOpen(true);
+    const closeModal = () => setModalIsOpen(false);
+
     const zoomIn = () => {
         setScale(scale * 1.2);
         graph.current.zoomIn();
@@ -321,15 +327,26 @@ const DiagramEditor = () => {
                     <option value="dotted">Punteada con punta</option>
                     <option value="none">Continua sin punta</option>
                 </select>
+                <button onClick={openModal}>Compartir Diagrama</button>
+                <div className="client-id-display">Cliente {clientId}</div>
+            </div>
+            <Modal
+                isOpen={modalIsOpen}
+                onRequestClose={closeModal}
+                contentLabel="Compartir Diagrama"
+                className="Modal"
+                overlayClassName="Overlay"
+            >
+                <h2>Compartir Diagrama</h2>
                 <input 
                     type="text" 
                     placeholder="Enter username or email" 
                     value={targetUsernameOrEmail}
                     onChange={(e) => setTargetUsernameOrEmail(e.target.value)}
                 />
-                <button onClick={shareDiagram}>Compartir Diagrama</button>
-                <div className="client-id-display">Cliente {clientId}</div>
-            </div>
+                <button onClick={shareDiagram}>Compartir</button>
+                <button onClick={closeModal}>Cerrar</button>
+            </Modal>
         </div>
     );
 };
