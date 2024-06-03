@@ -31,10 +31,6 @@ const userSchema = new mongoose.Schema({
   password: String,
   name: String,
   email: String,
-  sharedDiagrams: [{
-    from: String,
-    diagramXml: String
-  }]
 });
 
 const User = mongoose.model('User', userSchema);
@@ -135,6 +131,12 @@ io.use((socket, next) => {
   jwt.verify(token, 'your_jwt_secret', (err, user) => {
     if (err) return next(new Error('Authentication error'));
     socket.user = user;
+
+    // Inicializar la sesión activa si no existe
+    if (!activeSessions[user.id]) {
+      activeSessions[user.id] = { token, username: user.username };
+    }
+
     next();
   });
 }).on('connection', (socket) => {
