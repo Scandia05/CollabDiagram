@@ -31,10 +31,6 @@ const userSchema = new mongoose.Schema({
   password: String,
   name: String,
   email: String,
-  sharedDiagrams: [{
-    from: String,
-    diagramXml: String
-  }]
 });
 
 const User = mongoose.model('User', userSchema);
@@ -139,6 +135,11 @@ io.use((socket, next) => {
   });
 }).on('connection', (socket) => {
   console.log('New client connected:', socket.user.username);
+
+  // Verificar y crear la entrada para el usuario en activeSessions si no existe
+  if (!activeSessions[socket.user.id]) {
+    activeSessions[socket.user.id] = { username: socket.user.username, token: socket.handshake.auth.token };
+  }
 
   // Guardar el socket ID en la sesión activa
   activeSessions[socket.user.id].socketId = socket.id;
