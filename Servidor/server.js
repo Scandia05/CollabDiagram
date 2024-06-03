@@ -134,6 +134,11 @@ io.use((socket, next) => {
     next();
   });
 }).on('connection', (socket) => {
+  if (!socket.user) {
+    console.log('Authentication error: user not authenticated');
+    return socket.disconnect();
+  }
+
   console.log('New client connected:', socket.user.username);
 
   // Verificar y crear la entrada para el usuario en activeSessions si no existe
