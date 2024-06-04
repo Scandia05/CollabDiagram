@@ -1,10 +1,10 @@
 import io from 'socket.io-client';
-
-const token = localStorage.getItem('token');
+import { AuthContext } from './AuthContext';
+import { useContext } from 'react';
 
 const socket = io('http://200.13.4.230:4000', {
   auth: {
-    token: token
+    token: localStorage.getItem('token')
   }
 });
 

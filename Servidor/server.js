@@ -134,20 +134,14 @@ io.use((socket, next) => {
     next();
   });
 }).on('connection', (socket) => {
-  if (!socket.user) {
-    console.log('Authentication error: user not authenticated');
-    return socket.disconnect();
-  }
-
   console.log('New client connected:', socket.user.username);
 
-  // Verificar y crear la entrada para el usuario en activeSessions si no existe
-  if (!activeSessions[socket.user.id]) {
-    activeSessions[socket.user.id] = { username: socket.user.username, token: socket.handshake.auth.token };
-  }
-
   // Guardar el socket ID en la sesión activa
-  activeSessions[socket.user.id].socketId = socket.id;
+  if (activeSessions[socket.user.id]) {
+    activeSessions[socket.user.id].socketId = socket.id;
+  } else {
+    activeSessions[socket.user.id] = { socketId: socket.id, username: socket.user.username };
+  }
 
   // Enviar el diagrama actual al cliente que se conecta
   if (currentDiagramXml) {
@@ -169,7 +163,9 @@ io.use((socket, next) => {
   // Manejar la desconexión del cliente
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.user.username);
-    delete activeSessions[socket.user.id].socketId;
+    if (activeSessions[socket.user.id]) {
+      delete activeSessions[socket.user.id];
+    }
   });
 });
 
