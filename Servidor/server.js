@@ -20,10 +20,7 @@ const io = socketIo(server, {
 });
 
 // Conectar a la base de datos MongoDB
-mongoose.connect('mongodb://localhost:27017/mxgraph', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose.connect('mongodb://localhost:27017/mxgraph');
 
 // Definir el esquema y el modelo de usuario
 const userSchema = new mongoose.Schema({
