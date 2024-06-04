@@ -1,6 +1,6 @@
 import io from 'socket.io-client';
 
-const token = localStorage.getItem('token');
+const token = localStorage.getItem('token'); // Obtén el token del almacenamiento local
 
 const socket = io('http://200.13.4.230:4000', {
   auth: {
